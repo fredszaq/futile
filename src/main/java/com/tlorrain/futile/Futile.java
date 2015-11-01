@@ -5,6 +5,7 @@ import java.util.Collections;
 import java.util.Iterator;
 import java.util.LinkedList;
 import java.util.List;
+import java.util.NoSuchElementException;
 
 public class Futile<T> implements Iterable<T> {
 
@@ -70,6 +71,20 @@ public class Futile<T> implements Iterable<T> {
     }
 
     /**
+     * Iterate over this Futile and an iterable, applying a function to elements taken in pairs and returning a Futile
+     * of the results
+     *
+     * @param iterable    the iterable to zip with this Futile
+     * @param zipFunction the function to use to zip
+     * @return A futile containing the result of the zip
+     * @throws NoSuchElementException if the two iterables do not have the same size
+     * @throws NullPointerException   if one of the arguments is null
+     */
+    public <U, V> Futile<V> zip(Iterable<U> iterable, final Function2<? super T, ? super U, ? extends V> zipFunction) {
+        return from(zip(this, iterable, zipFunction));
+    }
+
+    /**
      * Converts this Futile to an Iterator
      *
      * @return an iterator over the elements of this Futile
@@ -132,7 +147,7 @@ public class Futile<T> implements Iterable<T> {
 
     @Override
     public String toString() {
-        return "Futile{ " +iterable + " }";
+        return "Futile{ " + iterable + " }";
     }
 
     /**
@@ -210,8 +225,8 @@ public class Futile<T> implements Iterable<T> {
      * @return a flattened list containing the result of mapFunction for every element of iterable
      * @throws NullPointerException if one of the arguments is null, or if the mapFunction returns null
      */
-    public static <T, U> List<U> flatMap(Iterable<T> iterable, final Function1<? super T, ? extends  Iterable<? extends U>> mapFunction) {
-        final List<U> result = new ArrayList<>();
+    public static <T, U> List<U> flatMap(Iterable<T> iterable, final Function1<? super T, ? extends Iterable<? extends U>> mapFunction) {
+        final List<U> result = new LinkedList<>();
         each(iterable, new Closure<T>() {
             @Override
             public void apply(T it) {
@@ -224,7 +239,7 @@ public class Futile<T> implements Iterable<T> {
     /**
      * Applies a function across an iterable, accumulating a value and returning it
      *
-     * @param iterable the iterable to fold over
+     * @param iterable     the iterable to fold over
      * @param initialValue the initial value to use for the fold
      * @param foldFunction the function to use for the fold
      * @return the result of the fold
@@ -238,14 +253,40 @@ public class Futile<T> implements Iterable<T> {
                 this.ref = ref;
             }
         }
-        final ChangingRef accumulator =  new ChangingRef(initialValue);
+        final ChangingRef accumulator = new ChangingRef(initialValue);
         each(iterable, new Closure<T>() {
             @Override
             public void apply(T it) {
-                accumulator.ref=foldFunction.apply(accumulator.ref, it);
+                accumulator.ref = foldFunction.apply(accumulator.ref, it);
             }
         });
         return accumulator.ref;
+    }
+
+    /**
+     * Iterate over two iterables, applying a function to elements taken in pairs and returning a list containing the
+     * results
+     *
+     * @param firstIterable  the first iterable to use
+     * @param secondIterable the second iterable to use
+     * @param zipFunction    the function to use to zip
+     * @return the zipped iterable
+     * @throws NoSuchElementException if the two iterables do not have the same size
+     * @throws NullPointerException   if one of the arguments is null
+     */
+    public static <T, U, V> List<V> zip(Iterable<T> firstIterable, Iterable<U> secondIterable, final Function2<? super T, ? super U, ? extends V> zipFunction) {
+        final Iterator<U> secondIterator = secondIterable.iterator();
+        final List<V> result = new LinkedList<>();
+        each(firstIterable, new Closure<T>() {
+            @Override
+            public void apply(T it) {
+                result.add(zipFunction.apply(it, secondIterator.next()));
+            }
+        });
+        if (secondIterator.hasNext()) {
+            throw new NoSuchElementException("Not enough elements in first iterable to perform the zip");
+        }
+        return result;
     }
 
     /**

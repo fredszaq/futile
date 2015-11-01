@@ -8,6 +8,7 @@ import java.util.Collections;
 import java.util.Iterator;
 import java.util.LinkedList;
 import java.util.List;
+import java.util.NoSuchElementException;
 
 import static org.fest.assertions.api.Assertions.assertThat;
 
@@ -155,6 +156,61 @@ public class FutileTest {
     }
 
     @Test
+    public void static_zip() {
+        assertThat(Futile.zip(Arrays.asList(1, 2, 3), Arrays.asList(4, 5, 6), new Function2<Integer, Integer, Integer>() {
+            @Override
+            public Integer apply(Integer arg1, Integer arg2) {
+                return arg1 + arg2;
+            }
+        })).containsExactly(5, 7, 9);
+    }
+
+    @Test(expected = NoSuchElementException.class)
+    public void static_zip_firstShorter() {
+        Futile.zip(Arrays.asList(1, 2), Arrays.asList(4, 5, 6), new Function2<Integer, Integer, Integer>() {
+            @Override
+            public Integer apply(Integer arg1, Integer arg2) {
+                return arg1 + arg2;
+            }
+        });
+    }
+
+    @Test(expected = NoSuchElementException.class)
+    public void static_zip_secondShorter() {
+        Futile.zip(Arrays.asList(1, 2, 3), Arrays.asList(4, 5), new Function2<Integer, Integer, Integer>() {
+            @Override
+            public Integer apply(Integer arg1, Integer arg2) {
+                return arg1 + arg2;
+            }
+        });
+    }
+
+    @Test(expected = NullPointerException.class)
+    public void static_zip_firstNull() {
+        Futile.zip(null, Arrays.asList(4, 5), new Function2<Integer, Integer, Integer>() {
+            @Override
+            public Integer apply(Integer arg1, Integer arg2) {
+                return arg1 + arg2;
+            }
+        });
+    }
+
+    @Test(expected = NullPointerException.class)
+    public void static_zip_secondNull() {
+        Futile.zip(Arrays.asList(4, 5), null, new Function2<Integer, Integer, Integer>() {
+            @Override
+            public Integer apply(Integer arg1, Integer arg2) {
+                return arg1 + arg2;
+            }
+        });
+    }
+
+    @Test(expected = NullPointerException.class)
+    public void static_zip_functionNull() {
+        Futile.zip(Arrays.asList(4, 5),Arrays.asList(4, 5), null);
+    }
+
+    @Test
     public void static_getOnlyElement() throws Exception {
         assertThat(Futile.getOnlyElement(Collections.singleton(42))).isEqualTo(42);
     }
@@ -292,6 +348,51 @@ public class FutileTest {
     @Test(expected = NullPointerException.class)
     public void fold_nullFunction() {
         Futile.from(Arrays.asList(1, 2, 3)).fold(0, null);
+    }
+
+    @Test
+    public void zip() {
+        assertThat(Futile.from(Arrays.asList(1, 2, 3)).zip(Arrays.asList(4, 5, 6), new Function2<Integer, Integer, Integer>() {
+            @Override
+            public Integer apply(Integer arg1, Integer arg2) {
+                return arg1 + arg2;
+            }
+        })).containsExactly(5, 7, 9);
+    }
+
+    @Test(expected = NoSuchElementException.class)
+    public void zip_firstShorter() {
+        Futile.from(Arrays.asList(1, 2)).zip(Arrays.asList(4, 5, 6), new Function2<Integer, Integer, Integer>() {
+            @Override
+            public Integer apply(Integer arg1, Integer arg2) {
+                return arg1 + arg2;
+            }
+        });
+    }
+
+    @Test(expected = NoSuchElementException.class)
+    public void zip_secondShorter() {
+        Futile.from(Arrays.asList(1, 2, 3)).zip(Arrays.asList(4, 5), new Function2<Integer, Integer, Integer>() {
+            @Override
+            public Integer apply(Integer arg1, Integer arg2) {
+                return arg1 + arg2;
+            }
+        });
+    }
+
+    @Test(expected = NullPointerException.class)
+    public void zip_iterableNull() {
+        Futile.from(Arrays.asList(4, 5)).zip(null, new Function2<Integer, Integer, Integer>() {
+            @Override
+            public Integer apply(Integer arg1, Integer arg2) {
+                return arg1 + arg2;
+            }
+        });
+    }
+
+    @Test(expected = NullPointerException.class)
+    public void zip_functionNull() {
+        Futile.from(Arrays.asList(4, 5)).zip(Arrays.asList(4, 5), null);
     }
 
 }
