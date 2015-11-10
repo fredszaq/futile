@@ -2,9 +2,11 @@ package com.tlorrain.futile;
 
 import java.util.ArrayList;
 import java.util.Collections;
+import java.util.HashMap;
 import java.util.Iterator;
 import java.util.LinkedList;
 import java.util.List;
+import java.util.Map;
 import java.util.NoSuchElementException;
 
 public class Futile<T> implements Iterable<T> {
@@ -82,6 +84,18 @@ public class Futile<T> implements Iterable<T> {
      */
     public <U, V> Futile<V> zip(Iterable<U> iterable, final Function2<? super T, ? super U, ? extends V> zipFunction) {
         return from(zip(this, iterable, zipFunction));
+    }
+
+
+    /**
+     * Applies a function to all elements of this futile. Returning a futile of map entries in which keys are the
+     * possible results of the function when applied to the elements of the iterable and the values are lists of the
+     * values of the iterable that produced the key when the function was applied to them
+     * @param groupByFunction the function to use to create the groups
+     * @return a map of the values of the iterable grouped via the groupByFunction
+     */
+    public <U> Futile<Map.Entry<U, List<T>>> groupBy(Function1<? super T, ? extends U> groupByFunction) {
+        return from(groupBy(this, groupByFunction).entrySet());
     }
 
     /**
@@ -307,6 +321,30 @@ public class Futile<T> implements Iterable<T> {
             return next;
         }
         throw new IllegalArgumentException(String.format("Expected to have one element in iterable but there wasn't any : %s", iterable));
+    }
+
+    /**
+     * Applies a function to all elements of an iterable. Returning the result in a map which keys are the possible
+     * results of the function when applied to the elements of the iterable and the values are lists of the values of
+     * the iterable that produced the key when the function was applied to them
+     * @param iterable the iterable to group
+     * @param groupByFunction the function to use to create the groups
+     * @return a map of the values of the iterable grouped via the groupByFunction
+     */
+    public static <T, U> Map<U, List<T>> groupBy(Iterable<T> iterable, final Function1<? super T, ? extends U> groupByFunction) {
+        return fold(iterable, new HashMap<U, List<T>>(), new Function2<Map<U, List<T>>, T, Map<U, List<T>>>() {
+            @Override
+            public Map<U, List<T>> apply(Map<U, List<T>> accumulator, T newValue) {
+                U key = groupByFunction.apply(newValue);
+                List<T> values = accumulator.get(key);
+                if(values == null) {
+                    values = new ArrayList<T>();
+                    accumulator.put(key, values);
+                }
+                values.add(newValue);
+                return accumulator;
+            }
+        });
     }
 
     private static class AddClosure<U> implements Closure<U> {

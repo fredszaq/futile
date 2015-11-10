@@ -12,6 +12,7 @@ processing pipelines from Iterables.
 + flatMap
 + fold
 + zip
++ groupBy
 
 ## Usage Example
 

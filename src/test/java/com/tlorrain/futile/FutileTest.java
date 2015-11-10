@@ -5,9 +5,11 @@ import org.junit.Test;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
+import java.util.HashMap;
 import java.util.Iterator;
 import java.util.LinkedList;
 import java.util.List;
+import java.util.Map;
 import java.util.NoSuchElementException;
 
 import static org.fest.assertions.api.Assertions.assertThat;
@@ -211,6 +213,32 @@ public class FutileTest {
     }
 
     @Test
+    public void static_groupBy() {
+        Map<String, List<String>> result = Futile.groupBy(Arrays.asList("a", "ha", "ha", "ho", "hoooo", "aaa"), new Function1<String, String>() {
+            public String apply(String it) {
+                return it.substring(0, 1);
+            }
+        });
+        assertThat(result.keySet()).containsExactly("a", "h");
+        assertThat(result.get("a")).containsExactly("a", "aaa");
+        assertThat(result.get("h")).containsExactly("ha", "ha", "ho", "hoooo");
+    }
+
+    @Test(expected = NullPointerException.class)
+    public void static_groupBy_nullIterable() {
+        Futile.groupBy(null, new Function1<String, String>() {
+            public String apply(String it) {
+                return it.substring(0, 1);
+            }
+        });
+    }
+
+    @Test(expected = NullPointerException.class)
+    public void static_groupBy_nullFunction() {
+        Futile.groupBy(Arrays.asList("a", "ha", "ha", "ho", "hoooo", "aaa"), null);
+    }
+
+    @Test
     public void static_getOnlyElement() throws Exception {
         assertThat(Futile.getOnlyElement(Collections.singleton(42))).isEqualTo(42);
     }
@@ -394,5 +422,31 @@ public class FutileTest {
     public void zip_functionNull() {
         Futile.from(Arrays.asList(4, 5)).zip(Arrays.asList(4, 5), null);
     }
+
+    @Test
+    public void groupBy() {
+        Futile<Map.Entry<String, List<String>>> result = Futile.from(Arrays.asList("a", "ha", "ha", "ho", "hoooo", "aaa")).groupBy(new Function1<String, String>() {
+            public String apply(String it) {
+                return it.substring(0, 1);
+            }
+        });
+        // TODO add a toMapMethod
+        Map<String, List<String>> fold = result.fold(new HashMap<String, List<String>>(), new Function2<Map<String, List<String>>, Map.Entry<String, List<String>>, Map<String, List<String>>>() {
+            @Override
+            public Map<String, List<String>> apply(Map<String, List<String>> arg1, Map.Entry<String, List<String>> arg2) {
+                arg1.put(arg2.getKey(), arg2.getValue());
+                return arg1;
+            }
+        }).toSingle();
+        assertThat(fold.keySet()).containsExactly("a", "h");
+        assertThat(fold.get("a")).containsExactly("a", "aaa");
+        assertThat(fold.get("h")).containsExactly("ha", "ha", "ho", "hoooo");
+    }
+
+    @Test(expected = NullPointerException.class)
+    public void groupBy_nullFunction() {
+        Futile.from(Arrays.asList("a", "ha", "ha", "ho", "hoooo", "aaa")).groupBy(null);
+    }
+
 
 }
